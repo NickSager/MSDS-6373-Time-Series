@@ -1,0 +1,220 @@
+---
+title: "Unit 2 Homework"
+author: "Nicholas Sager"
+date: "1/19/2024"
+format: 
+  html: 
+    toc: true
+    toc-location: left
+    toc-depth: 4
+    embed-resources: true
+    # self-contained-math: true
+---
+
+## Chapter 4: Problems 1 - 4
+```{r setup, include=FALSE}
+library(tidyverse)
+library(tswge)
+```
+
+### 4.1
+#### 4.1.a
+```{r}
+x = dfw.mon
+plotts.sample.wge(x)$xbar
+```
+The Parzen spectral density plot shows peaks at approximately 0.08 and 0.18 which correspond with periods of 12 and 5.5 months. The 12 month period is corroborated by the sample autocorrelation plot, and makes sense given the seasonality of the data. The 5.5 month peak does not show up in the autocorrelation and may just be noise.
+
+#### 4.1.b
+```{r}
+x = wtcrude2020
+plotts.sample.wge(x)$xbar
+```
+The spectral density plot shows a peak at zero and the autocorrelation remains high across a large range of lags This is consistent with wandering data, which the oil prices appear to be.
+
+#### 4.1.c
+```{r}
+x = sunspot2.0
+plotts.sample.wge(x)$xbar
+```
+The spectral density plot shows peaks at approximately 0, 0.10, and 0.16. These correspond to a cycle of 10 years, 6 years, and some wandering behavior. The autocorrelation plot shows a pseudo-periodic cycle of approximately 10 years.
+
+#### 4.1.d
+```{r}
+x = llynx
+plotts.sample.wge(x)$xbar
+```
+The spectral density plot and autocorrelation plot both show evidence of a cycle of approximately 10 years. This seems consistent with the sample data.
+
+#### 4.1.e
+```{r}
+x = doppler
+plotts.sample.wge(x)$xbar
+```
+The spectral density plot shows a series of small peaks, decreasing in size. The autocorrelation plot shows slowly decreasing autocorrelation with no evidence of cyclic behavior. There is clearly a cycle in the sample data, but it's period seems to be increasing over time. Because of this, it makes sense that there is no frequency evident in the spectral density plot and the results appear somewhat confusing.
+
+#### 4.1.f
+```{r}
+f = gen.arma.wge(n = 200, phi = c(2.55,-2.42,.855), mu = 10, sn = 7285)
+plotts.sample.wge(f)$xbar
+```
+The spectral density plot shows a peak at zero and 0.10. The autocorrelation plot shows evidence of a cycle with period of approximately 10. This is consistent with the sample data which shows both wandering behavior and a cycle with a period of approximately 10.
+
+#### 4.1.g
+```{r}
+f = gen.arma.wge(n = 200, phi = c(0.65, 0.62, -.855), mu = 50, sn = 5698)
+plotts.sample.wge(f)$xbar
+```
+The spectral density plot shows a peak at about 0.8, which corresponds to the period of approximately 12 which appears in the autocorrelation plot. There is also the start of a peak at the right side of the spectral density plot, which may correspond to the small high-frequency oscillation which appears in the sample data.
+
+#### 4.1.h
+```{r}
+h = gen.sigplusnoise.wge(n = 250, coef = c(2, 1), freq = c(0.05, 0.28), psi = c(1.2, 2), phi = 0.9, sn = 278)
+plotts.sample.wge(h)$xbar
+```
+The spectral density plot shows peaks around 0.05 and 0.3. The data appears to be cyclic with a cycle of period approximately 12, overlaid with a high-frequency oscillation. The autocorrelation plot shows a cycle of period approximately 8-14, but it is obscured by the high frequency cycle.
+
+### 4.2
+Time Series 1:
+
+  - Sample ACF: c
+  - Sample PSD: B
+  - Explanation: The time series appears consistent with wandering behavior. There are repeated peaks, but they do not appear with any regular cycle. The autocorrelation and spectral densities chosen match wandering behavior.
+
+Time Series 2:
+
+  - Sample ACF: a
+  - Sample PSD: D
+  - Explanation: This time series appears to predominately be wandering, with a small cycle of period approximately 10. The autocorrelation and spectral density plots chosen match this pattern.
+
+Time Series 3:
+
+  - Sample ACF: b
+  - Sample PSD: C
+  - Explanation: This sample is consistent with white noise. The ACF and spectral density plots are chosen to match a white noise pattern.
+
+Time Series 4:
+
+  - Sample ACF: d
+  - Sample PSD: A
+  - Explanation: This time series appears to have a cycle with period of approximately 5-10 and a higher frequency cycle. This is consistent with the autocorrelation shown and the spectral density plot which shows two distinct peaks.
+
+### 4.3
+```{r}
+y = gen.sigplusnoise.wge(n = 100, coef = c(2, 0), freq = c(0.1, 0), psi = c(0, 0), phi = 0, sn = 17)
+```
+a. x(t)=coef\[1\]\*cos(2\*pi\*freq\[1\]\*t+psi\[1\])+coef\[2\]\*cos(2\*pi\*freq\[2\]\*t+psi\[2\])+a(t)
+
+b. Plot the data:
+```{r}
+plotts.sample.wge(y)$xbar
+```
+
+c. High-pass Butterworth with cutoff 0.5:
+```{r}
+y_filt = butterworth.wge(y, type = "high", cutoff = 0.5, plot = TRUE)
+```
+The filtered data is zero for the entire time series. This means that there are no frequencies greater than 0.5 in the original time series.
+
+d. Low-pass Butterworth with cutoff 0.5:
+```{r}
+y_filt = butterworth.wge(y, type = "low", cutoff = 0.5, plot = TRUE)
+```
+In this case, the filtered data looks the same as the original data. This means that there are no cycles with frequency greater than 0.5 in the time series.
+
+e. High-pass Butterworth with cutoff 0.15:
+```{r}
+y_filt = butterworth.wge(y, type = "high", cutoff = 0.15, plot = TRUE)
+```
+The filtered data this time shows a relatively low amplitude cycle with period of approximately 2.
+
+f. Low-pass Butterworth with cutoff 0.15:
+```{r}
+y_filt = butterworth.wge(y, type = "low", cutoff = 0.15, plot = TRUE)
+```
+The filtered data below the cutoff of 0.15 shows a smooth function resembling a sine wave with period of approximately 15.
+
+g. Centered moving average smoother of order 5:
+
+```{r}
+y_filt = ma.smooth.wge(y, order = 5, plot = FALSE)
+plot(y_filt$smooth, type = 'l', xlab = 'Moving Average Smoother (order = 5)')
+```
+The output of the moving average smoother appears similar to the output of the low-pass Butterworth filter with 0.15 cutoff.
+
+### 4.4
+```{r}
+x = gen.arma.wge(n = 50, phi = c(1.83000, -1.97500, 1.82085, -0.97510), sn = 2787)
+plotts.sample.wge(x)$xbar
+parzen.wge(x)
+```
+a. The realization shows cyclic behavior with period of approximately 4. The spectral density plot displays the cycle as a peak at 0.25, but also picks up another frequency at about 0.05, which would correspond to a period of 20. This second cycle is not obvious in the realization.
+
+b. Low-pass Butterworth with cutoff 0.12:
+```{r}
+x_filt = butterworth.wge(x, type = "low", cutoff = 0.12, plot = TRUE)
+```
+The low-pass filter outputs a smoothed version of the original time series. There appears to be periodic behavior around the 0.05 frequency, but it is not very regular. The amplitude of the cycle also changes with time. This does explain the first peak in the spectral density plot.
+
+c. High-pass Butterworth with cutoff 0.12:
+```{r}
+x_filt = butterworth.wge(x, type = "high", cutoff = 0.12, plot = TRUE)
+```
+Here we see the cycle with period of 4. This is the second peak in the spectral density plot. It appears to be regular in amplitude.
+
+d. Low-pass Butterworth with cutoff 0.23:
+```{r}
+x_filt = butterworth.wge(x, type = "low", cutoff = 0.23, plot = TRUE)
+```
+This filter maintains the structure with the longer period (or wandering behavior), but smooths the cycle with period 4. Unlike the 0.12 filter, the higher frequency cycle is still evident in the filtered data. The cutoff of 0.23 likely attenuates the cycle by being close enough but not at the true frequency.
+
+e. High-pass Butterworth with cutoff 0.07:
+```{r}
+x_filt = butterworth.wge(x, type = "high", cutoff = 0.07, plot = TRUE)
+```
+The output of this filter looks almost identical to the 0.12 filter. The higher frequency cycle is evident with some slight low frequency movement. Although the filter is the same distance away from the true frequency as the 0.23 filter, much less of the cycle makes it through. I would speculate that this means the cycle with frequency 0.05 may be more related to noise than anything in the generating function.
+
+f. Low-pass Butterworth with cutoff 0.3:
+```{r}
+x_filt = butterworth.wge(x, type = "low", cutoff = 0.3, plot = TRUE)
+```
+The filtered data is the same as the original data. This means there are no frequencies greater than 0.3 in the original data, which is consistent with the spectral density plot.
+
+g. High-pass Butterworth with cutoff 0.3:
+```{r}
+x_filt = butterworth.wge(x, type = "high", cutoff = 0.3, plot = TRUE)
+```
+The filtered data shows a straight line at 0 dB with some end effects present. There is some oscillation present, but I believe that to be an artifact of the filter rather than the sample data. That said, it does have a period of approximately four, which is suspicious because it should be filtered out. The end effects might be compensated for by truncating the range we look at for filtered data.
+
+
+
+### Live Session Notes
+```{r}
+x = gen.arima.wge(50, phi = -0.99, sn = 1)
+acf(x, lag.max = 20)
+# parzen.wge(x)
+```
+```{r}
+x = gen.arima.wge(100, phi = 0, s = 4, sn = 1)
+acf(x, lag.max = 20)
+parzen.wge(x)
+```
+
+
+### FLS
+```{r}
+valencia = read.csv("Valencia_laptimes.csv", header = TRUE)
+x = as.numeric(paste(valencia$Time))
+plotts.sample.wge(x)
+
+# plot valencia data and acf with ggplot
+ggplot(valencia, aes(x = Year, y = Time)) +
+    geom_line() +  # or geom_point() for scatter plot
+    theme_minimal() +
+    labs(title = "Best Valencia Lap Time by Year",
+         x = "Year",
+         y = "Lap Time")
+
+acf(valencia$Time, main = "ACF of Lap Times")
+parzen.wge(valencia$Time)
+```
