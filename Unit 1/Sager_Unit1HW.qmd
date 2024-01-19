@@ -1,0 +1,154 @@
+---
+title: "Unit 1 Homework"
+author: "Nicholas Sager"
+date: "1/7/2024"
+format: 
+  html: 
+    toc: true
+    toc-location: left
+    embed-resources: true
+    # self-contained-math: true
+
+---
+
+## Chapter 3: Problems 1 - 6, 9 and 10
+```{r setup, include=FALSE}
+library(tidyverse)
+library(tswge)
+```
+
+### 3.1
+```{r}
+sales = c(76, 70, 66, 60, 70, 72, 76, 80)
+mu = mean(sales)
+n = length(sales)
+
+gamma_0 = sum((sales - mu)^2)/n
+print(paste("Gamma_0:", gamma_0))
+
+gamma_1 = sum((sales[2:n] - sales[1:(n-1)])^2)/(n)
+print(paste("Gamma_1:", gamma_1))
+
+rho_0 = gamma_0 / gamma_0
+print(paste("Rho_0:", rho_0))
+
+rho_1 = gamma_1 / gamma_0
+print(paste("Rho_1:", rho_1))
+```
+
+### 3.2
+```{r}
+data(wtcrude2020)
+plotts.sample.wge(wtcrude2020, lag.max = 50)
+
+data(dfw.mon)
+plotts.sample.wge(dfw.mon, lag.max = 50)
+```
+The West Texas Crude oil data appears to have a high degree of autocorrelation. As in the examples in the chapter with 0.99 and 0.95 correlation, the Autocorrelation tapers off very slowly with increasing lag. If the process is assumed to be stationary, the autocorrelation could explain the large sustained deviations from the mean. 
+
+The DFW data appears to have constant mean, variance, and be cyclical in nature. The plot of the autocorrelation shows a cycle with a period of approximately 12. This makes sense for monthly temperature data.
+
+Question: Is there a way to suppress the numerical output of the `plotts.sample.wge` function? Didn't see the option in the documentation.
+
+### 3.3
+```{r}
+set.seed(8327)
+x = rep(0, 30)
+for(i in 1:30){
+    roll = sample(1:6, 2)
+    x[i] = sum(roll)
+}
+plotts.wge(x)
+abline(h = 7)
+```
+b. Yes, the plot has the same random appearance as Figure 3.5. The value of t does not appear to provide any information about the process and the points are distributed around the expected value. One might expect to see more samples in the 2-5 range, but the sample size is small.
+
+c. i. 7
+   ii. 4
+   iii. 3  
+Note: in my instance, there are 14 sums greater than the mean.
+
+d. 
+```{r}
+set.seed(137)
+x2 = rep(0, 30)
+for(i in 1:30){
+    roll = sample(1:6, 2)
+    x2[i] = sum(roll)
+}
+plotts.wge(x2)
+abline(h = 7)
+```
+Yes, the plot has the same random appearance as Figure 3.5. The value of t does not appear to provide any information about the process and the points are distributed around the expected value. 
+   i. 8
+   ii. 5
+   iii. 3  
+
+e. In this case, they don't tell you anything. Each sample is independent.
+
+f. 
+```{r}
+plotts.sample.wge(x)
+plotts.sample.wge(x2)
+```
+The autocorrelation plots confirm the answer to part e.
+
+### 3.4
+Time Series 1: Autocorrelations C
+
+ - Each point is close to the the point before it. This high autocorrelation tapers off slowly with increasing lag.
+
+Time Series 2: Autocorrelations A
+
+ - Similar to the first time series, but the autocorrelation tapers off more quickly with increasing lag.
+
+Time Series 3: Autocorrelations D
+
+ - There appears to be some autocorrelation for nearby samples, but it tapers off quickly.
+
+Time Series 4: Autocorrelations B
+
+ - This appears to be a white noise process without any autocorrelation.
+
+### 3.5
+Time Series 1: Autocorrelations B
+
+ - Each point is close to the the point before it. This high autocorrelation tapers off with increasing lag.
+
+Time Series 2: Autocorrelations D
+
+ - This time series seems to alternate with each timestep. The autocorrelation tapers off and alternates between negative and positive.
+
+Time Series 3: Autocorrelations C
+
+ - The time series follows a cyclical pattern with period of approximately 10. The same pattern is shown in the autocorrelation plot.
+
+Time Series 4: Autocorrelations A
+
+ - This appears to have some autocorrelation for nearby samples, but reverses to opposite sides of the mean every 2-3 timesteps. This is visible on the autocorrelation plot by the alternating positive and negative values with gaps of 1-2 timesteps.
+
+### 3.6
+I don't believe that we can say conclusively by looking at the plots. Time Series 1 and 3 appear to have correlation between one point and the next. Both are alternating across the mean to some extent. Between 2 and 4, I would guess that 4 was white noise, but wouldn't be surprised if it was 2.
+
+### 3.9
+The lack of correlation means that for any value of x, y is just as likely to take on any of it's full range of values. When considering the covariance, which is the sum of cross products of differences between each and its mean, the end result will be close to zero. Since expected value of each will be the mean, on average the difference between the mean each value will be zero, an thus the whole thing will sum to zero.
+
+### 3.10
+Based on plot 3.3f, knowing x provides a great deal of information about y, but the correlation coefficient would still be close to zero. Because the generating function appears to be quadratic, approximately half of the values of y will be above the mean and half will be below. Thus, the expected value of (y - y_bar) will sum to zero, as will (x - x_bar). Because of this, the sum of cross products or covariance will be close to zero. The terms with some distance from the mean will cancel each other out.
+
+### FLS
+```{r}
+valencia = read.csv("Valencia_laptimes.csv", header = TRUE)
+x = as.numeric(paste(valencia$Time))
+plotts.sample.wge(x)
+
+# plot valencia data and acf with ggplot
+ggplot(valencia, aes(x = Year, y = Time)) +
+    geom_line() +  # or geom_point() for scatter plot
+    theme_minimal() +
+    labs(title = "Best Valencia Lap Time by Year",
+         x = "Year",
+         y = "Lap Time")
+
+acf(valencia$Time, main = "ACF of Lap Times")
+```
