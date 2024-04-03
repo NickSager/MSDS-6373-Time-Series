@@ -1,0 +1,69 @@
+---
+title: "Time Series Project"
+subtitle: "Spring 2024"
+author: "Nicholas Sager, Anishka Peter"
+date: last-modified
+format: 
+  html: 
+    toc: true
+    toc-location: left
+    toc-depth: 4
+    embed-resources: true
+    # self-contained-math: true
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(tswge)
+library(nnfor)
+library(vars)
+# library(tseries)
+# library(orcutt)
+```
+
+## Data
+Introduce dataset, response variable, and scenario.
+ACFs and Spectral Density plots.
+```{r}
+
+```
+
+
+## Models
+### Univariate: At least 2 candidate ARMA / ARIMA models
+a.	The models in factored form or at least separate the stationary and non-
+stationary factors with standard deviation or variance of the white noise.
+b.	AIC
+c.	ASE (short and long term forecasts)
+d.	Rolling Window RMSE (short and long term forecasts)
+e.	At least 10 superimposed spectral densities from 10 generatied 
+realizations like we did in Unit 11.  Use these to help choose between the at least two candidate univariate models. 
+f.	Visualization of Forecasts for both the short- and long-term Horizons. 
+g.	Be sure and include confidence intervals when possible (I don’t have 
+code for confidence intervals from MLP models at the moment… but that would be a good thing to work on!  )
+
+### Multivariate: At least one multivariate model (VAR or MLR with Correlated Errors)
+i.	Include an ASE (rolling window is not yet available in multivariate models)
+  1.	Short Horizon (you pick the length.. could be one step ahead)
+  2.	Long Horizon (you pick ... just must be longer than the short horizon.)
+ii.	Describe the explanatory variable(s) used in the model and why you felt they were significant / important.
+iii.	Visualization of Forecasts for both the short- and long-Horizons.
+iv.	Be sure and include confidence intervals if using VAR … 
+
+### MLP Model
+i.	ASE (short and long term forecasts)
+ii.	Rolling Window RMSE (short and long term forecasts (only if univariate)
+iii.	Visualization of Forecasts for both the short- and long-term Horizons. 
+iv.	Confidence / Prediction intervals are not required (I don’t have 
+code for confidence / prediction intervals (bootstrap intervals) for MLP models at the moment… but that would be a good thing to work on!  )
+
+### Ensemble Model
+
+## Model Comparison and Final Forecasts
+i.	Provide a table comparing all models on at least ASE and rwRMSE (if available).
+ii.	Include at least one ensemble model in addition to the models above.
+iii.	Make a case as to why you feel one of your candidate models is the most useful.
+iv.	Provide you final short and long term forecasts with that model. 
+
+
+## Conclusion
