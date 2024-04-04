@@ -25,18 +25,117 @@ library(vars)
 Introduce dataset, response variable, and scenario.
 ACFs and Spectral Density plots.
 ```{r}
+library(dplyr)
+library(lubridate)
+bike_data <- read_csv("https://raw.githubusercontent.com/NickSager/MSDS-6373-Time-Series/master/Project/bike_data.csv")
+
+plotts.sample.wge(bike_data$`Total Users`)
+
+# make the bike data daily instead of hourly 
+daily_bike_data <- bike_data %>%
+  group_by(Date) %>%
+  summarise(
+    Season = mean(Season),
+    Hour = mean(Hour),
+    Holiday = mean(Holiday),
+    Day_of_the_Week = mean(`Day of the Week`),
+    Working_Day = mean(`Working Day`),
+    Weather_Type = mean(`Weather Type`),
+    Temperature = mean(`Temperature F`),
+    Temperature_Feels = mean(`Temperature Feels F`),
+    Humidity = mean(Humidity),
+    Wind_Speed = mean(`Wind Speed`),
+    Casual_Users = sum(`Casual Users`),
+    Registered_Users = sum(`Registered Users`),
+    Total_Users = sum(`Total Users`), 
+  )
+
+plotts.sample.wge(daily_bike_data$Total_Users) 
 
 ```
 
 
 ## Models
 ### Univariate: At least 2 candidate ARMA / ARIMA models
+
+#### Seasonal Model 
+```{r}
+# create model 
+plotts.sample.wge(daily_bike_data$Total_Users) # looking at the ACF's there seems to be a seasonality of 2
+factor.wge(phi = c(0,1)) 
+est.arma.wge(daily_bike_data$Total_Users, p = 15) # looking at the overfit tables there's evidence of seasonality of 2 
+diff= artrans.wge(daily_bike_data$Total_Users, phi.tr = c(0,1))
+aic5.wge(diff,type = 'bic') # bic picked p = 2 and q = 2
+seasonal_est = est.arma.wge(diff, p = 2, q = 2)
+
+# Checking the residuals to see if the model is appropriate 
+plotts.wge(seasonal_est$res) # looks random
+acf(seasonal_est$res) # all the acfs are within the bounds 
+ljung.wge(seasonal_est$res) # greater than 0.05
+ljung.wge(seasonal_est$res, K =48) # greater than 0.05
+seasonal_gen1 = gen.arima.wge(200, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)
+seasonal_gen2 = gen.arima.wge(200, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)
+seasonal_gen3 = gen.arima.wge(200, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)
+seasonal_gen4 = gen.arima.wge(200, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)
+plotts.sample.wge(seasonal_gen1)
+plotts.sample.wge(seasonal_gen2)
+plotts.sample.wge(seasonal_gen3)
+plotts.sample.wge(seasonal_gen4) # all these 4 random realizations have the same behavior as the original data so the model seems to be appropriate
+
+```
+$$\phi(B)(1-B^2) = \theta(B)$$
+$$(1-0.1669356B-0.2335503B^2)(1-B^2) = (1- 0.005624988B- 0.823629022B^2)$$
+
+```{r}
+# plot of Last N forecasts for short and long term horizon 
+seasonal_stfore1 = fore.arima.wge(daily_bike_data$Total_Users, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2, n.ahead = 7, lastn = TRUE)
+seasonal_ltfore1 = fore.arima.wge(daily_bike_data$Total_Users, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2, n.ahead = 60, lastn = TRUE)
+
+t = 1:length(daily_bike_data$Total_Users)
+plot(t[720:731],daily_bike_data$Total_Users[720:731], type = 'l', xlab = "Time", ylab = "Total Users")
+points(t[725:731], seasonal_stf$f, type="l", lwd=2, lty = 2, col = 'blue')
+
+plot(t[670:731],daily_bike_data$Total_Users[670:731], type = 'l', xlab = "Time", ylab = "Total Users")
+points(t[672:731], seasonal_ltf$f, type="l", lwd=2, lty = 2,col = 'blue')
+
+# ASE 
+seasonal_stASE = mean((daily_bike_data$Total_Users[725:731]-seasonal_stfore1$f)^2)
+seasonal_ltASE = mean((daily_bike_data$Total_Users[672:731]-seasonal_ltfore1$f)^2)
+seasonal_stASE
+seasonal_ltASE
+
+# Rolling Window RMSE
+seasonal_strwRMSE = roll.win.rmse.wge(daily_bike_data$Total_Users, horizon = 7, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)
+seasonal_ltrwRMSE = roll.win.rmse.wge(daily_bike_data$Total_Users, horizon = 60, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)
+
+seasonal_strwRMSE
+seasonal_ltrwRMSE
+
+seasonal_stfore2 = fore.arima.wge(daily_bike_data$Total_Users, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2, n.ahead = 7)
+seasonal_ltfore2 = fore.arima.wge(daily_bike_data$Total_Users, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2, n.ahead = 60)
+
+
+# Plots of the short and Long Term Forecasts  
+t = 1:800
+plot(t[670:731],daily_bike_data$Total_Users[670:731], type = 'l', main = "Short Term Forecast", xlim = c(670,795), xlab = "Time", ylab = "Total Users")
+points(t[732:738],seasonal_stfore2$f, type = 'l', col = 'blue')
+points(t[732:738],seasonal_stfore2$ll, type = 'l',lwd=2, lty = 2, col = 'red')
+points(t[732:738],seasonal_stfore2$ul, type = 'l',lwd=2, lty = 2, col = 'red')
+
+
+plot(t[670:731],daily_bike_data$Total_Users[670:731], type = 'l', main = "Long Term Forecast", xlim = c(670,795), xlab = "Time", ylab = "Total Users")
+points(t[732:791],seasonal_ltfore2$f, type = 'l', col = 'blue')
+points(t[732:791],seasonal_ltfore2$ll, type = 'l',lwd=2, lty = 2, col = 'red')
+points(t[732:791],seasonal_ltfore2$ul, type = 'l',lwd=2, lty = 2, col = 'red')
+?fore.arima.wge
+```
+
 a.	The models in factored form or at least separate the stationary and non-
 stationary factors with standard deviation or variance of the white noise.
 b.	AIC
 c.	ASE (short and long term forecasts)
 d.	Rolling Window RMSE (short and long term forecasts)
-e.	At least 10 superimposed spectral densities from 10 generatied 
+e.	At least 10 superimposed spectral densities from 10 generated 
 realizations like we did in Unit 11.  Use these to help choose between the at least two candidate univariate models. 
 f.	Visualization of Forecasts for both the short- and long-term Horizons. 
 g.	Be sure and include confidence intervals when possible (I don’t have 
