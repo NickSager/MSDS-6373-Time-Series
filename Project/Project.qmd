@@ -127,7 +127,7 @@ plot(t[670:731],daily_bike_data$Total_Users[670:731], type = 'l', main = "Long T
 points(t[732:791],seasonal_ltfore2$f, type = 'l', col = 'blue')
 points(t[732:791],seasonal_ltfore2$ll, type = 'l',lwd=2, lty = 2, col = 'red')
 points(t[732:791],seasonal_ltfore2$ul, type = 'l',lwd=2, lty = 2, col = 'red')
-?fore.arima.wge
+
 ```
 
 a.	The models in factored form or at least separate the stationary and non-
@@ -148,6 +148,98 @@ i.	Include an ASE (rolling window is not yet available in multivariate models)
 ii.	Describe the explanatory variable(s) used in the model and why you felt they were significant / important.
 iii.	Visualization of Forecasts for both the short- and long-Horizons.
 iv.	Be sure and include confidence intervals if using VAR … 
+
+
+```{r}
+ccf(daily_bike_data$Total_Users,daily_bike_data$Humidity) # lag of 5 
+daily_bike_data$Humidity_lag = dplyr::lag(daily_bike_data$Humidity,5)
+
+fit = lm(Total_Users~Humidity_lag + Temperature + Temperature_Feels + Day_of_the_Week + Wind_Speed, data = daily_bike_data)
+
+plotts.sample.wge(fit$residuals)
+aic5.wge(fit$residuals, p =0:10, q = 0:5, type = 'bic')
+mlr = arima(daily_bike_data$Total_Users, order = c(6,0,1),xreg = cbind(daily_bike_data$Humidity_lag, daily_bike_data$Temperature, daily_bike_data$Temperature_Feels, daily_bike_data$Day_of_the_Week, daily_bike_data$Wind_Speed))
+
+
+plotts.wge(mlr$residuals) # looks random
+acf(mlr$residuals[-(1:5)]) # only 1/20 acfs out of bounds 
+ljung.wge(mlr$residuals) # greater than 0.05
+ljung.wge(mlr$residuals, K =48)
+
+
+mlr_st_pred = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[725:731], daily_bike_data$Temperature[725:731], daily_bike_data$Temperature_Feels[725:731], daily_bike_data$Day_of_the_Week[725:731], daily_bike_data$Wind_Speed[725:731]), n.ahead = 7, lastn= TRUE)
+
+plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(720,731))
+points(seq(725,731,1),mlr_st_pred$pred,type = 'b', pch = 15)
+
+mlr_st_ASE= mean((daily_bike_data$Total_Users[725:731] - mlr_pred$pred)^2)
+
+mlr_st_ASE
+
+mlr_lt_pred = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[672:731], daily_bike_data$Temperature[672:731], daily_bike_data$Temperature_Feels[672:731], daily_bike_data$Day_of_the_Week[672:731], daily_bike_data$Wind_Speed[672:731]), n.ahead = 60, lastn= TRUE)
+
+plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(670,731))
+points(seq(672,731,1),mlr_lt_pred$pred,type = 'b', pch = 15)
+
+mlr_lt_ASE= mean((daily_bike_data$Total_Users[672:731] - mlr_lt_pred$pred)^2)
+
+mlr_lt_ASE
+
+
+
+mlr_st_pred2 = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[725:731], daily_bike_data$Temperature[725:731], daily_bike_data$Temperature_Feels[725:731], daily_bike_data$Day_of_the_Week[725:731], daily_bike_data$Wind_Speed[725:731]), n.ahead = 7, lastn= FALSE)
+plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(720,738), main = "Short Term MLR Forecast")
+points(seq(732,738,1),mlr_st_pred2$pred,type = 'b', pch = 15,col = 'blue')
+
+mlr_lt_pred2 = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[672:731], daily_bike_data$Temperature[672:731], daily_bike_data$Temperature_Feels[672:731], daily_bike_data$Day_of_the_Week[672:731], daily_bike_data$Wind_Speed[672:731]), n.ahead = 60, lastn= FALSE)
+plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(720,785), main = "Long Term MLR Forecast")
+points(seq(732,791,1),mlr_lt_pred2$pred,type = 'b', pch = 15,col = 'blue')
+```
+
+```{r}
+VARselect(daily_bike_data[,c(5,8:11,14)])
+fit2 = VAR(daily_bike_data[,c(5,8:11,14)], p = 10, type = 'both')
+
+
+plotts.wge(fit2$varresult$Total_Users$residuals)
+acf(fit2$varresult$Total_Users$residuals)
+ljung.wge(fit2$varresult$Total_Users$residuals, p = 10)
+ljung.wge(fit2$varresult$Total_Users$residuals, p = 10, K = 48)
+
+var_st_pred = predict(fit2, n.ahead = 7, lastn = TRUE)
+
+t = 1:731
+plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(670,731))
+points(t[725:731], var_st_pred$fcst$Total_Users[,1], type="l", lwd=2, lty = 1)
+
+var_st_ase = mean((daily_bike_data$Total_Users[725:731]-var_st_pred$fcst$Total_Users[,1])^2)
+var_st_ase
+
+var_lt_pred = predict(fit2, n.ahead = 60, lastn = TRUE)
+
+t = 1:731
+plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(672,731))
+points(t[672:731], var_lt_pred$fcst$Total_Users[,1], type="l", lwd=2, lty = 1)
+
+var_lt_ase = mean((daily_bike_data$Total_Users[672:731]-var_lt_pred$fcst$Total_Users[,1])^2)
+var_lt_ase
+
+
+var_st_pred2 = predict(fit2, n.ahead = 7, lastn = FALSE)
+
+t = 1:800
+plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(670,738), main = "Short Term VAR Forecast")
+points(t[732:738], var_st_pred2$fcst$Total_Users[,1], type="l", lwd=2, lty = 1, col = 'blue')
+
+var_lt_pred2 = predict(fit2, n.ahead = 60, lastn = FALSE)
+
+t = 1:800
+plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(670,791), main = "Long Term VAR Forecast")
+points(t[732:791], var_lt_pred2$fcst$Total_Users[,1], type="l", lwd=2, lty = 1, col = 'blue')
+
+```
+
+
 
 ### MLP Model
 i.	ASE (short and long term forecasts)
