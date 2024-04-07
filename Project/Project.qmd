@@ -33,10 +33,10 @@ plotts.sample.wge(bike_data$`Total Users`)
 
 # make the bike data daily instead of hourly 
 daily_bike_data <- bike_data %>%
-  group_by(Date) %>%
+  group_by(Date = as.Date(Date, format = "%m/%d/%Y")) %>%
   summarise(
     Season = mean(Season),
-    Hour = mean(Hour),
+    # Hour = mean(Hour),
     Holiday = mean(Holiday),
     Day_of_the_Week = mean(`Day of the Week`),
     Working_Day = mean(`Working Day`),
