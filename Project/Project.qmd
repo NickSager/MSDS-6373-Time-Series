@@ -17,7 +17,7 @@ library(tidyverse)
 library(tswge)
 library(nnfor)
 library(vars)
-# library(tseries)
+library(tseries)
 # library(orcutt)
 ```
 
@@ -29,14 +29,14 @@ library(dplyr)
 library(lubridate)
 bike_data <- read_csv("https://raw.githubusercontent.com/NickSager/MSDS-6373-Time-Series/master/Project/bike_data.csv")
 
-plotts.sample.wge(bike_data$`Total Users`)
+plotts.sample.wge(bike_data$`Total Users`)$xbar
 
 # make the bike data daily instead of hourly 
 daily_bike_data <- bike_data %>%
   group_by(Date = as.Date(Date, format = "%m/%d/%Y")) %>%
   summarise(
     Season = mean(Season),
-    # Hour = mean(Hour),
+    Hour = mean(Hour),
     Holiday = mean(Holiday),
     Day_of_the_Week = mean(`Day of the Week`),
     Working_Day = mean(`Working Day`),
@@ -50,8 +50,7 @@ daily_bike_data <- bike_data %>%
     Total_Users = sum(`Total Users`), 
   )
 
-plotts.sample.wge(daily_bike_data$Total_Users) 
-
+plotts.sample.wge(daily_bike_data$Total_Users)$xbar
 ```
 
 
@@ -61,7 +60,7 @@ plotts.sample.wge(daily_bike_data$Total_Users)
 #### Seasonal Model 
 ```{r}
 # create model 
-plotts.sample.wge(daily_bike_data$Total_Users) # looking at the ACF's there seems to be a seasonality of 2
+plotts.sample.wge(daily_bike_data$Total_Users)$xbar # looking at the ACF's there seems to be a seasonality of 2
 factor.wge(phi = c(0,1)) 
 est.arma.wge(daily_bike_data$Total_Users, p = 15) # looking at the overfit tables there's evidence of seasonality of 2 
 diff= artrans.wge(daily_bike_data$Total_Users, phi.tr = c(0,1))
@@ -77,10 +76,10 @@ seasonal_gen1 = gen.arima.wge(200, phi = seasonal_est$phi, theta = seasonal_est$
 seasonal_gen2 = gen.arima.wge(200, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)
 seasonal_gen3 = gen.arima.wge(200, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)
 seasonal_gen4 = gen.arima.wge(200, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)
-plotts.sample.wge(seasonal_gen1)
-plotts.sample.wge(seasonal_gen2)
-plotts.sample.wge(seasonal_gen3)
-plotts.sample.wge(seasonal_gen4) # all these 4 random realizations have the same behavior as the original data so the model seems to be appropriate
+plotts.sample.wge(seasonal_gen1)$xbar
+plotts.sample.wge(seasonal_gen2)$xbar
+plotts.sample.wge(seasonal_gen3)$xbar
+plotts.sample.wge(seasonal_gen4)$xbar # all these 4 random realizations have the same behavior as the original data so the model seems to be appropriate
 
 ```
 $$\phi(B)(1-B^2) = \theta(B)$$
@@ -93,10 +92,10 @@ seasonal_ltfore1 = fore.arima.wge(daily_bike_data$Total_Users, phi = seasonal_es
 
 t = 1:length(daily_bike_data$Total_Users)
 plot(t[720:731],daily_bike_data$Total_Users[720:731], type = 'l', xlab = "Time", ylab = "Total Users")
-points(t[725:731], seasonal_stf$f, type="l", lwd=2, lty = 2, col = 'blue')
+points(t[725:731], seasonal_stfore1$f, type="l", lwd=2, lty = 2, col = 'blue')
 
 plot(t[670:731],daily_bike_data$Total_Users[670:731], type = 'l', xlab = "Time", ylab = "Total Users")
-points(t[672:731], seasonal_ltf$f, type="l", lwd=2, lty = 2,col = 'blue')
+points(t[672:731], seasonal_ltfore1$f, type="l", lwd=2, lty = 2,col = 'blue')
 
 # ASE 
 seasonal_stASE = mean((daily_bike_data$Total_Users[725:731]-seasonal_stfore1$f)^2)
@@ -105,11 +104,12 @@ seasonal_stASE
 seasonal_ltASE
 
 # Rolling Window RMSE
-seasonal_strwRMSE = roll.win.rmse.wge(daily_bike_data$Total_Users, horizon = 7, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)
-seasonal_ltrwRMSE = roll.win.rmse.wge(daily_bike_data$Total_Users, horizon = 60, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)
+# RW-RMSE commented out due to obscene amount of unsupressable output
+# seasonal_strwRMSE = roll.win.rmse.wge(daily_bike_data$Total_Users, horizon = 7, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)$rwRMSE
+# seasonal_ltrwRMSE = roll.win.rmse.wge(daily_bike_data$Total_Users, horizon = 60, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2)$rwRMSE
 
-seasonal_strwRMSE
-seasonal_ltrwRMSE
+seasonal_strwRMSE = 1253.353
+seasonal_ltrwRMSE = 1504.218
 
 seasonal_stfore2 = fore.arima.wge(daily_bike_data$Total_Users, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2, n.ahead = 7)
 seasonal_ltfore2 = fore.arima.wge(daily_bike_data$Total_Users, phi = seasonal_est$phi, theta = seasonal_est$theta, s = 2, n.ahead = 60)
@@ -196,10 +196,11 @@ arima_stASE
 arima_ltASE
 
 # Rolling Window RMSE
-arima_strwRMSE = roll.win.rmse.wge(daily_bike_data$Total_Users, horizon = 7, phi = est$phi, theta = est$theta, d = 1)$rwRMSE
-arima_ltrwRMSE = roll.win.rmse.wge(daily_bike_data$Total_Users, horizon = 60, phi = est$phi, theta = est$theta, d = 1)$rwRMSE
-arima_strwRMSE
-arima_ltrwRMSE
+# RW-RMSE commented out due to obscene amount of unsupressable output
+# arima_strwRMSE = roll.win.rmse.wge(daily_bike_data$Total_Users, horizon = 7, phi = est$phi, theta = est$theta, d = 1)$rwRMSE
+# arima_ltrwRMSE = roll.win.rmse.wge(daily_bike_data$Total_Users, horizon = 60, phi = est$phi, theta = est$theta, d = 1)$rwRMSE
+arima_strwRMSE = 1237.393
+arima_ltrwRMSE = 1503.197
 
 # Plots of the short and Long Term Forecasts  
 fore_arima_st_2 = fore.arima.wge(daily_bike_data$Total_Users, phi = est$phi, theta = est$theta, d = 1, n.ahead = 7)
@@ -246,7 +247,7 @@ daily_bike_data$Humidity_lag = dplyr::lag(daily_bike_data$Humidity,5)
 
 fit = lm(Total_Users~Humidity_lag + Temperature + Temperature_Feels + Day_of_the_Week + Wind_Speed, data = daily_bike_data)
 
-plotts.sample.wge(fit$residuals)
+plotts.sample.wge(fit$residuals)$xbar
 aic5.wge(fit$residuals, p =0:10, q = 0:5, type = 'bic')
 mlr = arima(daily_bike_data$Total_Users, order = c(6,0,1),xreg = cbind(daily_bike_data$Humidity_lag, daily_bike_data$Temperature, daily_bike_data$Temperature_Feels, daily_bike_data$Day_of_the_Week, daily_bike_data$Wind_Speed))
 
@@ -262,7 +263,7 @@ mlr_st_pred = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[725
 plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(720,731))
 points(seq(725,731,1),mlr_st_pred$pred,type = 'b', pch = 15)
 
-mlr_st_ASE= mean((daily_bike_data$Total_Users[725:731] - mlr_pred$pred)^2)
+mlr_st_ASE= mean((daily_bike_data$Total_Users[725:731] - mlr_st_pred$pred)^2)
 
 mlr_st_ASE
 
