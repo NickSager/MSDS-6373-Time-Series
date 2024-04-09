@@ -51,6 +51,7 @@ daily_bike_data <- bike_data %>%
   )
 
 plotts.sample.wge(daily_bike_data$Total_Users)$xbar
+plotts.wge(daily_bike_data$Total_Users)
 ```
 
 
@@ -299,11 +300,17 @@ mlr_lt_ASE
 
 mlr_st_pred2 = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[725:731], daily_bike_data$Temperature[725:731], daily_bike_data$Temperature_Feels[725:731], daily_bike_data$Day_of_the_Week[725:731], daily_bike_data$Wind_Speed[725:731]), n.ahead = 7, lastn= FALSE)
 plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(720,738), main = "Short Term MLR Forecast")
-points(seq(732,738,1),mlr_st_pred2$pred,type = 'b', pch = 15,col = 'blue',lwd=2, lty = 2)
+points(seq(732,738,1),mlr_st_pred2$pred,type = 'l', pch = 15,col = 'blue',lwd=2, lty = 2)
+
 
 mlr_lt_pred2 = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[672:731], daily_bike_data$Temperature[672:731], daily_bike_data$Temperature_Feels[672:731], daily_bike_data$Day_of_the_Week[672:731], daily_bike_data$Wind_Speed[672:731]), n.ahead = 60, lastn= FALSE)
-plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(720,785), main = "Long Term MLR Forecast")
-points(seq(732,791,1),mlr_lt_pred2$pred,type = 'b', pch = 15,col = 'blue',lwd=2, lty = 2)
+plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(1,785), main = "Long Term MLR Forecast")
+points(seq(732,791,1),mlr_lt_pred2$pred,type = 'l', pch = 1,col = 'blue',lwd=2, lty = 2)
+
+# Year Out Forecast
+mlr_lt_pred3 = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[367:731], daily_bike_data$Temperature[367:731], daily_bike_data$Temperature_Feels[367:731], daily_bike_data$Day_of_the_Week[367:731], daily_bike_data$Wind_Speed[367:731]), n.ahead = 365, lastn= FALSE)
+plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(1,1100), main = "Long Term MLR Forecast")
+points(seq(732,1096,1),mlr_lt_pred2$pred,type = 'l', pch = 1,col = 'blue',lwd=2, lty = 2)
 ```
 
 ```{r}
