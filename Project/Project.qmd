@@ -352,13 +352,153 @@ points(t[732:791], var_lt_pred2$fcst$Total_Users[,1], type="l", lwd=2, lty = 1, 
 ```
 
 
-
 ### MLP Model
 i.	ASE (short and long term forecasts)
 ii.	Rolling Window RMSE (short and long term forecasts (only if univariate)
 iii.	Visualization of Forecasts for both the short- and long-term Horizons. 
 iv.	Confidence / Prediction intervals are not required (I don’t have 
 code for confidence / prediction intervals (bootstrap intervals) for MLP models at the moment… but that would be a good thing to work on!  )
+
+```{r}
+# Convert tibble to a data frame with ts() objects
+bike_DF <- daily_bike_data %>%
+  dplyr::select(-c(Date, Hour, Holiday, Temperature_Feels, Casual_Users, Registered_Users)) %>%  # Remove unnecessary columns
+  mutate(across(everything(), ~ zoo(.x, order.by = daily_bike_data$Date))) %>%  # Convert each column to a zoo object
+  mutate(across(everything(), ~ as.ts(.x))) %>%  # Convert zoo objects to ts objects
+  as.data.frame()  # Convert the tibble to a data frame
+
+bikeShortTrain = bike_DF[1:724,]
+bikeShortTest = bike_DF[725:731,]
+bikeLongTrain = bike_DF[1:671,]
+bikeLongTest = bike_DF[672:731,]
+seed = 137
+```
+```{r}
+# Forecast Short-term predictor variables using MLP
+set.seed(seed)
+fit.mlp.short.Season = mlp(ts(bikeShortTrain[,"Season"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Season = forecast(fit.mlp.short.Season, h = 7)
+plot(fore.mlp.short.Season)
+
+fit.mlp.short.Day_of_the_Week = mlp(ts(bikeShortTrain[,"Day_of_the_Week"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Day_of_the_Week = forecast(fit.mlp.short.Day_of_the_Week, h = 7)
+fore.mlp.short.Day_of_the_Week$mean = round(fore.mlp.short.Day_of_the_Week$mean) # Round to nearest whole number
+plot(fore.mlp.short.Day_of_the_Week)
+
+fit.mlp.short.Working_Day = mlp(ts(bikeShortTrain[,"Working_Day"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Working_Day = forecast(fit.mlp.short.Working_Day, h = 7)
+fore.mlp.short.Working_Day$mean = round(fore.mlp.short.Working_Day$mean) # Round to nearest whole number
+plot(fore.mlp.short.Working_Day)
+
+# fit.mlp.short.Weather_Type = mlp(ts(bikeShortTrain[,"Weather_Type"]),reps = 5, difforder = 0, comb = "mean", det.type = "auto")
+# fore.mlp.short.Weather_Type = forecast(fit.mlp.short.Weather_Type, h = 7)
+# plot(fore.mlp.short.Weather_Type)
+
+fit.mlp.short.Temperature = mlp(ts(bikeShortTrain[,"Temperature"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Temperature = forecast(fit.mlp.short.Temperature, h = 7)
+plot(fore.mlp.short.Temperature)
+
+fit.mlp.short.Humidity = mlp(ts(bikeShortTrain[,"Humidity"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Humidity = forecast(fit.mlp.short.Humidity, h = 7)
+plot(fore.mlp.short.Humidity)
+
+fit.mlp.short.Wind_Speed = mlp(ts(bikeShortTrain[,"Wind_Speed"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Wind_Speed = forecast(fit.mlp.short.Wind_Speed, h = 7)
+plot(fore.mlp.short.Wind_Speed)
+```
+```{r}
+# Forecast Long-term predictor variables using MLP
+set.seed(seed)
+fit.mlp.long.Season = mlp(ts(bikeLongTrain[,"Season"]),reps = 10, difforder = 0, comb = "median", det.type = "bin")
+fore.mlp.long.Season = forecast(fit.mlp.long.Season, h = 60)
+plot(fore.mlp.long.Season)
+
+fit.mlp.long.Day_of_the_Week = mlp(ts(bikeLongTrain[,"Day_of_the_Week"]),reps = 10, difforder = 0, comb = "median", det.type = "bin")
+fore.mlp.long.Day_of_the_Week = forecast(fit.mlp.long.Day_of_the_Week, h = 60)
+fore.mlp.long.Day_of_the_Week$mean = round(fore.mlp.long.Day_of_the_Week$mean) # Round to nearest whole number
+plot(fore.mlp.long.Day_of_the_Week)
+
+fit.mlp.long.Working_Day = mlp(ts(bikeLongTrain[,"Working_Day"]),reps = 10, difforder = 0, comb = "median", det.type = "bin")
+fore.mlp.long.Working_Day = forecast(fit.mlp.long.Working_Day, h = 60)
+fore.mlp.long.Working_Day$mean = round(fore.mlp.long.Working_Day$mean) # Round to nearest whole number
+plot(fore.mlp.long.Working_Day)
+
+# fit.mlp.long.Weather_Type = mlp(ts(bikeLongTrain[,"Weather_Type"]),reps = 10, difforder = 0, comb = "mean", det.type = "auto")
+# fore.mlp.long.Weather_Type = forecast(fit.mlp.long.Weather_Type, h = 60)
+# plot(fore.mlp.long.Weather_Type)
+
+fit.mlp.long.Temperature = mlp(ts(bikeLongTrain[,"Temperature"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.long.Temperature = forecast(fit.mlp.long.Temperature, h = 60)
+plot(fore.mlp.long.Temperature)
+
+fit.mlp.long.Humidity = mlp(ts(bikeLongTrain[,"Humidity"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.long.Humidity = forecast(fit.mlp.long.Humidity, h = 60)
+plot(fore.mlp.long.Humidity)
+
+fit.mlp.long.Wind_Speed = mlp(ts(bikeLongTrain[,"Wind_Speed"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.long.Wind_Speed = forecast(fit.mlp.long.Wind_Speed, h = 60)
+plot(fore.mlp.long.Wind_Speed)
+```
+```{r}
+# Pack into data frames
+BDF_fore_short = data.frame(Day = ts(seq(1,731,1)),
+                            Season = ts(c(bikeShortTrain$Season,fore.mlp.short.Season$mean)),
+                            Day_of_the_Week = ts(c(bikeShortTrain$Day_of_the_Week,fore.mlp.short.Day_of_the_Week$mean)),
+                            Working_Day = ts(c(bikeShortTrain$Working_Day,fore.mlp.short.Working_Day$mean)),
+                            # Weather_Type = ts(c(bikeShortTrain$Weather_Type,fore.mlp.short.Weather_Type$mean)),
+                            Temperature = ts(c(bikeShortTrain$Temperature,fore.mlp.short.Temperature$mean)),
+                            Humidity = ts(c(bikeShortTrain$Humidity,fore.mlp.short.Humidity$mean)),
+                            Wind_Speed = ts(c(bikeShortTrain$Wind_Speed,fore.mlp.short.Wind_Speed$mean)))
+BDF_fore_long = data.frame(Day = ts(seq(1,731,1)),
+                            Season = ts(c(bikeLongTrain$Season,fore.mlp.long.Season$mean)),
+                            Day_of_the_Week = ts(c(bikeLongTrain$Day_of_the_Week,fore.mlp.long.Day_of_the_Week$mean)),
+                            Working_Day = ts(c(bikeLongTrain$Working_Day,fore.mlp.long.Working_Day$mean)),
+                            # Weather_Type = ts(c(bikeLongTrain$Weather_Type,fore.mlp.long.Weather_Type$mean)),
+                            Temperature = ts(c(bikeLongTrain$Temperature,fore.mlp.long.Temperature$mean)),
+                            Humidity = ts(c(bikeLongTrain$Humidity,fore.mlp.long.Humidity$mean)),
+                            Wind_Speed = ts(c(bikeLongTrain$Wind_Speed,fore.mlp.long.Wind_Speed$mean)))
+
+BDF_xreg_short = data.frame(Day = ts(seq(1,724,1)),
+                            Season = ts(c(bikeShortTrain$Season)),
+                            Day_of_the_Week = ts(c(bikeShortTrain$Day_of_the_Week)),
+                            Working_Day = ts(c(bikeShortTrain$Working_Day)),
+                            # Weather_Type = ts(c(bikeShortTrain$Weather_Type)),
+                            Temperature = ts(c(bikeShortTrain$Temperature)),
+                            Humidity = ts(c(bikeShortTrain$Humidity)),
+                            Wind_Speed = ts(c(bikeShortTrain$Wind_Speed)))
+BDF_xreg_long = data.frame(Day = ts(seq(1,671,1)),
+                            Season = ts(c(bikeLongTrain$Season)),
+                            Day_of_the_Week = ts(c(bikeLongTrain$Day_of_the_Week)),
+                            Working_Day = ts(c(bikeLongTrain$Working_Day)),
+                            # Weather_Type = ts(c(bikeLongTrain$Weather_Type)),
+                            Temperature = ts(c(bikeLongTrain$Temperature)),
+                            Humidity = ts(c(bikeLongTrain$Humidity)),
+                            Wind_Speed = ts(c(bikeLongTrain$Wind_Speed)))
+
+# Fit MLP model for Total_Users
+set.seed(seed)
+fit.mlp.st = mlp(ts(bikeShortTrain$Total_Users),reps = 10, comb = "median",xreg = BDF_xreg_short, allow.det.season = TRUE, det.type = "bin")
+fit.mlp.lt = mlp(ts(bikeLongTrain$Total_Users),reps = 10, comb = "median",xreg = BDF_xreg_long, allow.det.season = TRUE, det.type = "bin")
+
+# Forecast and evaluate ASE for short and long
+fore.mlp.st = forecast(fit.mlp.st, h = 7, xreg = BDF_fore_short)
+fore.mlp.lt = forecast(fit.mlp.lt, h = 60, xreg = BDF_fore_long)
+ASE.mlp.st = mean((bikeShortTest$Total_Users - fore.mlp.st$mean)^2)
+ASE.mlp.lt = mean((bikeLongTest$Total_Users - fore.mlp.lt$mean)^2)
+print(paste("MLP ASE Short Term: ", round(ASE.mlp.st, 2)))
+print(paste("MLP ASE Long Term: ", round(ASE.mlp.lt, 2)))
+plot(fore.mlp.st)
+plot(fore.mlp.lt)
+
+# Plot the forecasts
+t = 1:731
+plot(t[720:731],bike_DF$Total_Users[720:731], type = 'l', xlab = "Time", ylab = "Total Users", main = "MLP Short Term Forecast")
+lines(t[725:731], fore.mlp.st$mean, type="l", lwd=2, lty = 2, col = 'blue')
+
+plot(t[600:731],bike_DF$Total_Users[600:731], type = 'l', xlab = "Time", ylab = "Total Users", main = "MLP Long Term Forecast")
+lines(t[672:731], fore.mlp.lt$mean, type="l", lwd=2, lty = 2, col = 'blue')
+```
+
 
 ### Ensemble Model
 
