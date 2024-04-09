@@ -501,12 +501,68 @@ lines(t[672:731], fore.mlp.lt$mean, type="l", lwd=2, lty = 2, col = 'blue')
 
 
 ### Ensemble Model
+```{r, eval = F}
+# Code for Figure 11.37
+# TODO: Adopt this for ours
+#Ensemble
+
+#VAR p = 7 non seasonal
+CMortVAR7 = VAR(cardiacTrain, type = "both", p = 7) #p = 2 from SBC
+preds7=predict(CMortVAR7,n.ahead=156)
+RMSEVAR7 = sqrt(mean((cardiacTest[,"cmort"] - preds7$fcst$cmort[,1])^2))
+RMSEVAR7 # 6.664
+
+#VAR p = 2 seasonal
+CMortVAR2S = VAR(cardiacTrain, season = 52, type = "both", p = 2) #p = 2 from SBC
+preds2S=predict(CMortVAR2S,n.ahead=156)
+ensemble = (preds2S$fcst$cmort[,1] + fore.mlp.cmort$mean)/2
+
+#Plot
+plot(seq(1,508,1), cardiac[,"cmort"], type = "l",xlim = c(350,508), ylim = c(70,110), xlab = "Time", ylab = "Cardiac Mortality", main = "52 Week Cardiac Mortality Forecast From A VAR/MLP Ensemble")
+lines(seq(353,508,1), ensemble, type = "l", lwd = 4, col = "green")
+lines(seq(353,508,1),preds2S$fcst$cmort[,1] , type = "l", lwd = 2, lty = 2, col = "red")
+lines(seq(353,508,1),fore.mlp.cmort$mean , type = "l", lwd = 2, lty = 4, col = "blue")
+lines(seq(353,508,1),preds7$fcst$cmort[,1] , type = "l", lwd = 2, lty = 2, col = "purple")
+RMSEVAR7 = sqrt(mean((cardiacTest[,"cmort"] - preds7$fcst$cmort[,1])^2))
+RMSEVAR7
+RMSEVAR2S = sqrt(mean((cardiacTest[,"cmort"] - preds2S$fcst$cmort[,1])^2))
+RMSEVAR2S
+RMSE = sqrt(mean((cardiacTest[,"cmort"] - fore.mlp.cmort$mean)^2))
+RMSE
+RMSEENSEMBLE = sqrt(mean((cardiacTest[,"cmort"] - ensemble)^2))
+RMSEENSEMBLE # 5.64, 5,81
+```
 
 ## Model Comparison and Final Forecasts
 i.	Provide a table comparing all models on at least ASE and rwRMSE (if available).
 ii.	Include at least one ensemble model in addition to the models above.
 iii.	Make a case as to why you feel one of your candidate models is the most useful.
 iv.	Provide you final short and long term forecasts with that model. 
+```{r Metrics Table}
+library(knitr)
+library(kableExtra)
+
+# TODO: Fill in model metrics
+# Create a data frame with the metrics
+model_metrics <- data.frame(
+  Model = c("ARMA", "ARIMA", "VAR", "MLR", "MLP", "Ensemble"),
+  ASE = c(ase_model1, ase_model2, ase_model3),
+  rwRMSE = c(rwrmse_model1, rwrmse_model2, rwrmse_model3)
+)
+
+# Apply conditional formatting to the ASE column
+model_metrics$ASE <- cell_spec(
+  model_metrics$ASE, 
+  color = ifelse(model_metrics$ASE == min(model_metrics$ASE), "red", "black")
+)
+
+# Create and format the table
+kable(model_metrics, format = "html", escape = F, caption = "Model Performance Metrics") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  column_spec(2:3, format = "html", digits = 2)
+
+```
 
 
 ## Conclusion
