@@ -51,7 +51,6 @@ daily_bike_data <- bike_data %>%
   )
 
 plotts.sample.wge(daily_bike_data$Total_Users)$xbar
-plotts.wge(daily_bike_data$Total_Users)
 ```
 
 
@@ -66,6 +65,7 @@ plotts.sample.wge(daily_bike_data$Total_Users)$xbar # looking at the spectral de
 aic5.wge(daily_bike_data$Total_Users,type = 'bic', p = 0:10) # bic picked p = 7 and q = 0
 arma_est = est.arma.wge(daily_bike_data$Total_Users, p = 4, q = 1)
 
+arma_est$aic
 # Checking the residuals to see if the model is appropriate 
 plotts.wge(arma_est$res) # looks random
 acf(arma_est$res) # all acfs are within the bounds 
@@ -265,20 +265,21 @@ iv.	Be sure and include confidence intervals if using VAR …
 ccf(daily_bike_data$Total_Users,daily_bike_data$Humidity) # lag of 4 
 daily_bike_data$Humidity_lag = dplyr::lag(daily_bike_data$Humidity,4)
 
-fit = lm(Total_Users~Humidity_lag + Temperature + Temperature_Feels + Day_of_the_Week + Wind_Speed, data = daily_bike_data)
+# Short Term Prediction Fit
+fit1 = lm(Total_Users~Humidity_lag + Temperature + Day_of_the_Week + Wind_Speed, data = daily_bike_data[1:724,])
 
-plotts.sample.wge(fit$residuals)$xbar
-aic5.wge(fit$residuals, type = 'bic')
-mlr = arima(daily_bike_data$Total_Users, order = c(2,0,1),xreg = cbind(daily_bike_data$Humidity_lag, daily_bike_data$Temperature, daily_bike_data$Temperature_Feels, daily_bike_data$Day_of_the_Week, daily_bike_data$Wind_Speed))
-
-
-plotts.wge(mlr$residuals) # looks random
-acf(mlr$residuals[-(1:5)]) # only 1/20 acfs out of bounds 
-ljung.wge(mlr$residuals) # greater than 0.05
-ljung.wge(mlr$residuals, K =48)
+plotts.sample.wge(fit1$residuals)$xbar
+aic5.wge(fit1$residuals, type = 'bic')
+mlr1 = arima(daily_bike_data$Total_Users[1:724], order = c(2,0,1),xreg = cbind(daily_bike_data$Humidity_lag[1:724], daily_bike_data$Temperature[1:724], daily_bike_data$Day_of_the_Week[1:724], daily_bike_data$Wind_Speed[1:724]))
 
 
-mlr_st_pred = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[725:731], daily_bike_data$Temperature[725:731], daily_bike_data$Temperature_Feels[725:731], daily_bike_data$Day_of_the_Week[725:731], daily_bike_data$Wind_Speed[725:731]), n.ahead = 7, lastn= TRUE)
+plotts.wge(mlr1$residuals) # looks random
+acf(mlr1$residuals[-(1:5)]) # none of the acfs out of bounds 
+ljung.wge(mlr1$residuals) # greater than 0.05
+ljung.wge(mlr1$residuals, K =48)
+
+AIC(fit1)
+mlr_st_pred = predict(mlr1, newxreg = data.frame(daily_bike_data$Humidity_lag[725:731], daily_bike_data$Temperature[725:731], daily_bike_data$Day_of_the_Week[725:731], daily_bike_data$Wind_Speed[725:731]), n.ahead = 7, lastn= TRUE)
 
 plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(720,731))
 points(seq(725,731,1),mlr_st_pred$pred,type = 'b', pch = 15)
@@ -287,7 +288,21 @@ mlr_st_ASE= mean((daily_bike_data$Total_Users[725:731] - mlr_st_pred$pred)^2)
 
 mlr_st_ASE
 
-mlr_lt_pred = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[672:731], daily_bike_data$Temperature[672:731], daily_bike_data$Temperature_Feels[672:731], daily_bike_data$Day_of_the_Week[672:731], daily_bike_data$Wind_Speed[672:731]), n.ahead = 60, lastn= TRUE)
+# Long Term Prediction Fit
+fit2 = lm(Total_Users~Humidity_lag + Temperature + Day_of_the_Week + Wind_Speed, data = daily_bike_data[1:671,])
+
+
+plotts.sample.wge(fit2$residuals)$xbar
+aic5.wge(fit2$residuals, type = 'bic')
+
+mlr2 = arima(daily_bike_data$Total_Users[1:671], order = c(2,0,1),xreg = cbind(daily_bike_data$Humidity_lag[1:671], daily_bike_data$Temperature[1:671], daily_bike_data$Day_of_the_Week[1:671], daily_bike_data$Wind_Speed[1:671]))
+
+plotts.wge(mlr2$residuals) # looks random
+acf(mlr2$residuals[-(1:5)]) # only 1/20 acfs out of bounds 
+ljung.wge(mlr2$residuals) # greater than 0.05
+ljung.wge(mlr2$residuals, K =48)
+
+mlr_lt_pred = predict(mlr2, newxreg = data.frame(daily_bike_data$Humidity_lag[672:731], daily_bike_data$Temperature[672:731], daily_bike_data$Day_of_the_Week[672:731], daily_bike_data$Wind_Speed[672:731]), n.ahead = 60, lastn= TRUE)
 
 plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(670,731))
 points(seq(672,731,1),mlr_lt_pred$pred,type = 'l', pch = 15,col = 'blue',lwd=2, lty = 2)
@@ -298,20 +313,70 @@ mlr_lt_ASE
 
 
 
-mlr_st_pred2 = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[725:731], daily_bike_data$Temperature[725:731], daily_bike_data$Temperature_Feels[725:731], daily_bike_data$Day_of_the_Week[725:731], daily_bike_data$Wind_Speed[725:731]), n.ahead = 7, lastn= FALSE)
+
+# Forecasting The 4 Exogenous Variables 
+
+parzen.wge(daily_bike_data$Humidity, trunc = 300)
+humdiff = artrans.wge(daily_bike_data$Humidity, phi.tr = c(rep(0,364),1))
+aic5.wge(humdiff, type = 'aic')
+hum = est.arma.wge(humdiff, p = 2, q = 2)
+acf(hum$res)
+ljung.wge(hum$res) #  Fail to reject  
+ljung.wge(hum$res, K=48) # Fail to reject
+preds_Humidity = fore.arima.wge(daily_bike_data$Humidity, s = 365, phi = hum$phi, theta = hum$theta, n.ahead = 365)
+preds_Humidity_lag = dplyr::lag(preds_Humidity,4)
+
+parzen.wge(daily_bike_data$Temperature, trunc = 300)
+tempdiff = artrans.wge(daily_bike_data$Temperature, phi.tr = c(rep(0,364),1))
+plotts.sample.wge(tempdiff)
+aic5.wge(tempdiff, type = 'bic') # bic picked p = 1 and q = 1
+temp = est.arma.wge(tempdiff, p = 1, q = 1)
+acf(temp$res)
+ljung.wge(temp$res) # close to 0.05 but Fail to reject  
+ljung.wge(temp$res, K=48) # Fail to reject
+preds_Temperature = fore.arima.wge(daily_bike_data$Temperature, s = 365, phi = temp$phi, theta = temp$theta, n.ahead = 365)
+
+sequence_length <- 366
+pred_Days_of_the_Week <- (2:sequence_length) %% 7
+
+plotts.sample.wge(daily_bike_data$Wind_Speed, trunc = 300)
+winddiff = artrans.wge(daily_bike_data$Wind_Speed, phi.tr = c(rep(0,364),1))
+aic5.wge(winddiff, type = 'bic') # bic and aic picked p = 0 and q = 1
+wind = est.arma.wge(winddiff, p = 0, q = 1)
+acf(wind$res)
+ljung.wge(wind$res) #  Fail to reject  
+ljung.wge(wind$res, K=48) # Fail to reject
+preds_Wind_Speed = fore.arima.wge(daily_bike_data$Wind_Speed, s = 365, phi = wind$phi, theta = wind$theta, n.ahead = 365)
+
+ahead = cbind(Humidity_lag = dplyr::lag(preds_Humidity$f,4),Temperature = preds_Temperature$f,Days_of_the_Week = pred_Days_of_the_Week, Wind_Speed = preds_Wind_Speed$f)
+
+ahead[1:4,1] = daily_bike_data$Humidity[728:731]
+fit3 = lm(Total_Users~Humidity_lag + Temperature + Day_of_the_Week + Wind_Speed, data = daily_bike_data)
+aic5.wge(fit3$residuals, type = 'bic')
+mlr_forecast = arima(daily_bike_data$Total_Users, order = c(2,0,1),xreg = cbind(daily_bike_data$Humidity_lag, daily_bike_data$Temperature, daily_bike_data$Day_of_the_Week, daily_bike_data$Wind_Speed))
+
+plotts.wge(mlr_forecast$residuals) # looks random
+acf(mlr_forecast$residuals[-(1:5)]) # 0/20 acfs out of bounds 
+ljung.wge(mlr_forecast$residuals) # greater than 0.05
+ljung.wge(mlr_forecast$residuals, K =48)
+
+
+mlr_st_pred2 = predict(mlr_forecast, newxreg = ahead[1:7,], n.ahead = 7, lastn= FALSE)
 plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(720,738), main = "Short Term MLR Forecast")
 points(seq(732,738,1),mlr_st_pred2$pred,type = 'l', pch = 15,col = 'blue',lwd=2, lty = 2)
 
 
-mlr_lt_pred2 = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[672:731], daily_bike_data$Temperature[672:731], daily_bike_data$Temperature_Feels[672:731], daily_bike_data$Day_of_the_Week[672:731], daily_bike_data$Wind_Speed[672:731]), n.ahead = 60, lastn= FALSE)
+mlr_lt_pred2 = predict(mlr_forecast, newxreg = ahead[1:60,], n.ahead = 60, lastn= FALSE)
 plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(1,785), main = "Long Term MLR Forecast")
 points(seq(732,791,1),mlr_lt_pred2$pred,type = 'l', pch = 1,col = 'blue',lwd=2, lty = 2)
 
 # Year Out Forecast
-mlr_lt_pred3 = predict(mlr, newxreg = data.frame(daily_bike_data$Humidity_lag[367:731], daily_bike_data$Temperature[367:731], daily_bike_data$Temperature_Feels[367:731], daily_bike_data$Day_of_the_Week[367:731], daily_bike_data$Wind_Speed[367:731]), n.ahead = 365, lastn= FALSE)
+mlr_lt_pred3 = predict(mlr_forecast, newxreg = ahead[1:365,], n.ahead = 365, lastn= FALSE)
 plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(1,1100), main = "Long Term MLR Forecast")
-points(seq(732,1096,1),mlr_lt_pred2$pred,type = 'l', pch = 1,col = 'blue',lwd=2, lty = 2)
+points(seq(732,1096,1),mlr_lt_pred3$pred,type = 'l', pch = 1,col = 'blue',lwd=2, lty = 2)
+
 ```
+
 
 ```{r}
 VARselect(daily_bike_data[,c(5,8:11,14)])
