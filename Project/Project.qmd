@@ -271,6 +271,7 @@ fit1 = lm(Total_Users~Humidity + Temperature + Day_of_the_Week + Wind_Speed, dat
 
 plotts.sample.wge(fit1$residuals)$xbar
 aic5.wge(fit1$residuals, type = 'bic')
+aic5.wge(fit1$residuals, type = 'aic')
 mlr1 = arima(daily_bike_data$Total_Users[1:724], order = c(2,0,1),xreg = cbind(daily_bike_data$Humidity[1:724], daily_bike_data$Temperature[1:724], daily_bike_data$Day_of_the_Week[1:724], daily_bike_data$Wind_Speed[1:724]))
 
 
@@ -352,6 +353,7 @@ ahead = cbind(Humidity = preds_Humidity$f,Temperature = preds_Temperature$f,Days
 
 fit3 = lm(Total_Users~Humidity + Temperature + Day_of_the_Week + Wind_Speed, data = daily_bike_data)
 aic5.wge(fit3$residuals, type = 'bic')
+aic5.wge(fit3$residuals, type = 'aic')
 mlr_forecast = arima(daily_bike_data$Total_Users, order = c(2,0,1),xreg = cbind(daily_bike_data$Humidity, daily_bike_data$Temperature, daily_bike_data$Day_of_the_Week, daily_bike_data$Wind_Speed))
 
 plotts.wge(mlr_forecast$residuals) # looks random
