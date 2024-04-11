@@ -151,7 +151,7 @@ points(t[732:791],arma_ltfore2$ul, type = 'l',lwd=2, lty = 2, col = 'red')
 
 ```
 
-### Non-Seasonal ARIMA Model
+#### Non-Seasonal ARIMA Model
 ```{r}
 # Check if the data could be stationary
 adf.test(daily_bike_data$Total_Users) # p-value 0.7, data not likely stationary
@@ -165,7 +165,12 @@ est = est.arma.wge(total_d1, p = 1, q = 1)
 plotts.sample.wge(est$res, arlimits = TRUE)$xbar # appears to be white noise
 ljung.wge(est$res) # FTR
 ljung.wge(est$res, K = 48) # Reject. Mixed evidence.
+```
+The final model is:
 
+$$(1 - 0.3591B)(1 - B)X_t = (1 + 0.8903B)\alpha_t$$
+
+```{r}
 # Generate realizations for comparison
 arima_gen1 = gen.arima.wge(200, phi = est$phi, theta = est$theta, d = 1)
 arima_gen2 = gen.arima.wge(200, phi = est$phi, theta = est$theta, d = 1)
@@ -429,13 +434,259 @@ iii.	Visualization of Forecasts for both the short- and long-term Horizons.
 iv.	Confidence / Prediction intervals are not required (I don’t have 
 code for confidence / prediction intervals (bootstrap intervals) for MLP models at the moment… but that would be a good thing to work on!  )
 
+```{r}
+# Convert tibble to a data frame with ts() objects
+bike_DF <- daily_bike_data %>%
+  dplyr::select(-c(Date, Hour, Holiday, Temperature_Feels, Casual_Users, Registered_Users)) %>%  # Remove unnecessary columns
+  mutate(across(everything(), ~ zoo(.x, order.by = daily_bike_data$Date))) %>%  # Convert each column to a zoo object
+  mutate(across(everything(), ~ as.ts(.x))) %>%  # Convert zoo objects to ts objects
+  as.data.frame()  # Convert the tibble to a data frame
+
+bikeShortTrain = bike_DF[1:724,]
+bikeShortTest = bike_DF[725:731,]
+bikeLongTrain = bike_DF[1:671,]
+bikeLongTest = bike_DF[672:731,]
+seed = 137
+```
+```{r}
+# Forecast Short-term predictor variables using MLP
+set.seed(seed)
+fit.mlp.short.Season = mlp(ts(bikeShortTrain[,"Season"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Season = forecast(fit.mlp.short.Season, h = 7)
+plot(fore.mlp.short.Season)
+
+fit.mlp.short.Day_of_the_Week = mlp(ts(bikeShortTrain[,"Day_of_the_Week"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Day_of_the_Week = forecast(fit.mlp.short.Day_of_the_Week, h = 7)
+fore.mlp.short.Day_of_the_Week$mean = round(fore.mlp.short.Day_of_the_Week$mean) # Round to nearest whole number
+plot(fore.mlp.short.Day_of_the_Week)
+
+fit.mlp.short.Working_Day = mlp(ts(bikeShortTrain[,"Working_Day"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Working_Day = forecast(fit.mlp.short.Working_Day, h = 7)
+fore.mlp.short.Working_Day$mean = round(fore.mlp.short.Working_Day$mean) # Round to nearest whole number
+plot(fore.mlp.short.Working_Day)
+
+# fit.mlp.short.Weather_Type = mlp(ts(bikeShortTrain[,"Weather_Type"]),reps = 5, difforder = 0, comb = "mean", det.type = "auto")
+# fore.mlp.short.Weather_Type = forecast(fit.mlp.short.Weather_Type, h = 7)
+# plot(fore.mlp.short.Weather_Type)
+
+fit.mlp.short.Temperature = mlp(ts(bikeShortTrain[,"Temperature"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Temperature = forecast(fit.mlp.short.Temperature, h = 7)
+plot(fore.mlp.short.Temperature)
+
+fit.mlp.short.Humidity = mlp(ts(bikeShortTrain[,"Humidity"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Humidity = forecast(fit.mlp.short.Humidity, h = 7)
+plot(fore.mlp.short.Humidity)
+
+fit.mlp.short.Wind_Speed = mlp(ts(bikeShortTrain[,"Wind_Speed"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.short.Wind_Speed = forecast(fit.mlp.short.Wind_Speed, h = 7)
+plot(fore.mlp.short.Wind_Speed)
+```
+```{r}
+# Forecast Long-term predictor variables using MLP
+set.seed(seed)
+fit.mlp.long.Season = mlp(ts(bikeLongTrain[,"Season"]),reps = 10, difforder = 0, comb = "median", det.type = "bin")
+fore.mlp.long.Season = forecast(fit.mlp.long.Season, h = 60)
+plot(fore.mlp.long.Season)
+
+fit.mlp.long.Day_of_the_Week = mlp(ts(bikeLongTrain[,"Day_of_the_Week"]),reps = 10, difforder = 0, comb = "median", det.type = "bin")
+fore.mlp.long.Day_of_the_Week = forecast(fit.mlp.long.Day_of_the_Week, h = 60)
+fore.mlp.long.Day_of_the_Week$mean = round(fore.mlp.long.Day_of_the_Week$mean) # Round to nearest whole number
+plot(fore.mlp.long.Day_of_the_Week)
+
+fit.mlp.long.Working_Day = mlp(ts(bikeLongTrain[,"Working_Day"]),reps = 10, difforder = 0, comb = "median", det.type = "bin")
+fore.mlp.long.Working_Day = forecast(fit.mlp.long.Working_Day, h = 60)
+fore.mlp.long.Working_Day$mean = round(fore.mlp.long.Working_Day$mean) # Round to nearest whole number
+plot(fore.mlp.long.Working_Day)
+
+# fit.mlp.long.Weather_Type = mlp(ts(bikeLongTrain[,"Weather_Type"]),reps = 10, difforder = 0, comb = "mean", det.type = "auto")
+# fore.mlp.long.Weather_Type = forecast(fit.mlp.long.Weather_Type, h = 60)
+# plot(fore.mlp.long.Weather_Type)
+
+fit.mlp.long.Temperature = mlp(ts(bikeLongTrain[,"Temperature"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.long.Temperature = forecast(fit.mlp.long.Temperature, h = 60)
+plot(fore.mlp.long.Temperature)
+
+fit.mlp.long.Humidity = mlp(ts(bikeLongTrain[,"Humidity"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.long.Humidity = forecast(fit.mlp.long.Humidity, h = 60)
+plot(fore.mlp.long.Humidity)
+
+fit.mlp.long.Wind_Speed = mlp(ts(bikeLongTrain[,"Wind_Speed"]),reps = 10, difforder = 0, comb = "mean", det.type = "bin")
+fore.mlp.long.Wind_Speed = forecast(fit.mlp.long.Wind_Speed, h = 60)
+plot(fore.mlp.long.Wind_Speed)
+```
+```{r}
+# Pack into data frames
+BDF_fore_short = data.frame(Day = ts(seq(1,731,1)),
+                            Season = ts(c(bikeShortTrain$Season,fore.mlp.short.Season$mean)),
+                            Day_of_the_Week = ts(c(bikeShortTrain$Day_of_the_Week,fore.mlp.short.Day_of_the_Week$mean)),
+                            Working_Day = ts(c(bikeShortTrain$Working_Day,fore.mlp.short.Working_Day$mean)),
+                            # Weather_Type = ts(c(bikeShortTrain$Weather_Type,fore.mlp.short.Weather_Type$mean)),
+                            Temperature = ts(c(bikeShortTrain$Temperature,fore.mlp.short.Temperature$mean)),
+                            Humidity = ts(c(bikeShortTrain$Humidity,fore.mlp.short.Humidity$mean)),
+                            Wind_Speed = ts(c(bikeShortTrain$Wind_Speed,fore.mlp.short.Wind_Speed$mean)))
+BDF_fore_long = data.frame(Day = ts(seq(1,731,1)),
+                            Season = ts(c(bikeLongTrain$Season,fore.mlp.long.Season$mean)),
+                            Day_of_the_Week = ts(c(bikeLongTrain$Day_of_the_Week,fore.mlp.long.Day_of_the_Week$mean)),
+                            Working_Day = ts(c(bikeLongTrain$Working_Day,fore.mlp.long.Working_Day$mean)),
+                            # Weather_Type = ts(c(bikeLongTrain$Weather_Type,fore.mlp.long.Weather_Type$mean)),
+                            Temperature = ts(c(bikeLongTrain$Temperature,fore.mlp.long.Temperature$mean)),
+                            Humidity = ts(c(bikeLongTrain$Humidity,fore.mlp.long.Humidity$mean)),
+                            Wind_Speed = ts(c(bikeLongTrain$Wind_Speed,fore.mlp.long.Wind_Speed$mean)))
+
+BDF_xreg_short = data.frame(Day = ts(seq(1,724,1)),
+                            Season = ts(c(bikeShortTrain$Season)),
+                            Day_of_the_Week = ts(c(bikeShortTrain$Day_of_the_Week)),
+                            Working_Day = ts(c(bikeShortTrain$Working_Day)),
+                            # Weather_Type = ts(c(bikeShortTrain$Weather_Type)),
+                            Temperature = ts(c(bikeShortTrain$Temperature)),
+                            Humidity = ts(c(bikeShortTrain$Humidity)),
+                            Wind_Speed = ts(c(bikeShortTrain$Wind_Speed)))
+BDF_xreg_long = data.frame(Day = ts(seq(1,671,1)),
+                            Season = ts(c(bikeLongTrain$Season)),
+                            Day_of_the_Week = ts(c(bikeLongTrain$Day_of_the_Week)),
+                            Working_Day = ts(c(bikeLongTrain$Working_Day)),
+                            # Weather_Type = ts(c(bikeLongTrain$Weather_Type)),
+                            Temperature = ts(c(bikeLongTrain$Temperature)),
+                            Humidity = ts(c(bikeLongTrain$Humidity)),
+                            Wind_Speed = ts(c(bikeLongTrain$Wind_Speed)))
+
+# Fit MLP model for Total_Users
+set.seed(seed)
+fit.mlp.st = mlp(ts(bikeShortTrain$Total_Users),reps = 10, comb = "median",xreg = BDF_xreg_short, allow.det.season = TRUE, det.type = "bin")
+fit.mlp.lt = mlp(ts(bikeLongTrain$Total_Users),reps = 10, comb = "median",xreg = BDF_xreg_long, allow.det.season = TRUE, det.type = "bin")
+plot(fit.mlp.lt)
+
+# Forecast and evaluate ASE for short and long
+fore.mlp.st = forecast(fit.mlp.st, h = 7, xreg = BDF_fore_short)
+fore.mlp.lt = forecast(fit.mlp.lt, h = 60, xreg = BDF_fore_long)
+ASE.mlp.st = mean((bikeShortTest$Total_Users - fore.mlp.st$mean)^2)
+ASE.mlp.lt = mean((bikeLongTest$Total_Users - fore.mlp.lt$mean)^2)
+print(paste("MLP ASE Short Term: ", round(ASE.mlp.st, 2)))
+print(paste("MLP ASE Long Term: ", round(ASE.mlp.lt, 2)))
+plot(fore.mlp.st)
+plot(fore.mlp.lt)
+
+# Plot the forecasts
+t = 1:731
+plot(t[720:731],bike_DF$Total_Users[720:731], type = 'l', xlab = "Time", ylab = "Total Users", main = "MLP Short Term Forecast")
+lines(t[725:731], fore.mlp.st$mean, type="l", lwd=2, lty = 2, col = 'blue')
+
+plot(t[600:731],bike_DF$Total_Users[600:731], type = 'l', xlab = "Time", ylab = "Total Users", main = "MLP Long Term Forecast")
+lines(t[672:731], fore.mlp.lt$mean, type="l", lwd=2, lty = 2, col = 'blue')
+```
+
+
 ### Ensemble Model
+```{r, eval = FALSE}
+# Code for Figure 11.37
+# TODO: Adopt this for ours
+#Ensemble
+
+#VAR p = 7 non seasonal
+CMortVAR7 = VAR(cardiacTrain, type = "both", p = 7) #p = 2 from SBC
+preds7=predict(CMortVAR7,n.ahead=156)
+RMSEVAR7 = sqrt(mean((cardiacTest[,"cmort"] - preds7$fcst$cmort[,1])^2))
+RMSEVAR7 # 6.664
+
+#VAR p = 2 seasonal
+CMortVAR2S = VAR(cardiacTrain, season = 52, type = "both", p = 2) #p = 2 from SBC
+preds2S=predict(CMortVAR2S,n.ahead=156)
+ensemble = (preds2S$fcst$cmort[,1] + fore.mlp.cmort$mean)/2
+
+#Plot
+plot(seq(1,508,1), cardiac[,"cmort"], type = "l",xlim = c(350,508), ylim = c(70,110), xlab = "Time", ylab = "Cardiac Mortality", main = "52 Week Cardiac Mortality Forecast From A VAR/MLP Ensemble")
+lines(seq(353,508,1), ensemble, type = "l", lwd = 4, col = "green")
+lines(seq(353,508,1),preds2S$fcst$cmort[,1] , type = "l", lwd = 2, lty = 2, col = "red")
+lines(seq(353,508,1),fore.mlp.cmort$mean , type = "l", lwd = 2, lty = 4, col = "blue")
+lines(seq(353,508,1),preds7$fcst$cmort[,1] , type = "l", lwd = 2, lty = 2, col = "purple")
+RMSEVAR7 = sqrt(mean((cardiacTest[,"cmort"] - preds7$fcst$cmort[,1])^2))
+RMSEVAR7
+RMSEVAR2S = sqrt(mean((cardiacTest[,"cmort"] - preds2S$fcst$cmort[,1])^2))
+RMSEVAR2S
+RMSE = sqrt(mean((cardiacTest[,"cmort"] - fore.mlp.cmort$mean)^2))
+RMSE
+RMSEENSEMBLE = sqrt(mean((cardiacTest[,"cmort"] - ensemble)^2))
+RMSEENSEMBLE # 5.64, 5,81
+```
+
 
 ## Model Comparison and Final Forecasts
 i.	Provide a table comparing all models on at least ASE and rwRMSE (if available).
 ii.	Include at least one ensemble model in addition to the models above.
 iii.	Make a case as to why you feel one of your candidate models is the most useful.
 iv.	Provide you final short and long term forecasts with that model. 
+```{r Metrics Table Short, echo = FALSE, eval = TRUE}
+library(knitr)
+library(kableExtra)
+
+# Create a data frame with the metrics
+st_model_metrics <- data.frame(
+  Model = c("ARMA", "ARIMA", "VAR", "MLR", "MLP", "Ensemble"),
+  ASE = c(arma_stASE, arima_stASE, var_st_ase, mlr_st_ASE, ASE.mlp.st, NA),
+  rwRMSE = c(arma_strwRMSE, arima_strwRMSE, NA, NA, NA, NA)
+)
+
+# Define helper function for conditional formatting
+apply_conditional_formatting <- function(x){
+  lapply(x, function(val){
+    if (!is.na(val)){
+      return(cell_spec(round(val, 2), 
+          color = ifelse(val == min(st_model_metrics$ASE, na.rm = TRUE),
+            "red", "black")))} else {return(NA)}
+     })
+ }
+
+# Apply conditional formatting to the error columns
+st_model_metrics$ASE <- unlist(apply_conditional_formatting(st_model_metrics$ASE))
+st_model_metrics$rwRMSE <- unlist(apply_conditional_formatting(st_model_metrics$rwRMSE))
+
+# Convert columns to character type with specified formatting
+st_model_metrics$ASE <- formatC(st_model_metrics$ASE, big.mark = ",", format="f")
+st_model_metrics$rwRMSE <- formatC(st_model_metrics$rwRMSE, big.mark = ",", format="f")
+
+# Create and format the table
+kable(st_model_metrics, format = "html", escape = F, caption = "Model Performance Metrics (Short-Term)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  column_spec(2:3)
+```
+
+```{r Metrics Table Long, echo = FALSE, eval = TRUE}
+library(knitr)
+library(kableExtra)
+
+# Create a data frame with the metrics
+lt_model_metrics <- data.frame(
+  Model = c("ARMA", "ARIMA", "VAR", "MLR", "MLP", "Ensemble"),
+  ASE = c(arma_ltASE, arima_ltASE, var_lt_ase, mlr_lt_ASE, ASE.mlp.lt, NA),
+  rwRMSE = c(arma_ltrwRMSE, arima_ltrwRMSE, NA, NA, NA, NA)
+)
+
+# Define helper function for conditional formatting
+apply_conditional_formatting <- function(x){
+  lapply(x, function(val){
+    if (!is.na(val)){
+      return(cell_spec(round(val, 2), 
+          color = ifelse(val == min(lt_model_metrics$ASE, na.rm = TRUE),
+            "red", "black")))} else {return(NA)}
+     })
+ }
+
+# Apply conditional formatting to the error columns
+lt_model_metrics$ASE <- unlist(apply_conditional_formatting(lt_model_metrics$ASE))
+lt_model_metrics$rwRMSE <- unlist(apply_conditional_formatting(lt_model_metrics$rwRMSE))
+
+# Convert columns to character type with specified formatting
+lt_model_metrics$ASE <- formatC(lt_model_metrics$ASE, big.mark = ",", format="f")
+lt_model_metrics$rwRMSE <- formatC(lt_model_metrics$rwRMSE, big.mark = ",", format="f")
+
+#FIXME: commas not working
+# Create and format the table
+kable(lt_model_metrics, format = "html", escape = F, caption = "Model Performance Metrics (Long-Term)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  column_spec(2:3)
+```
 
 
 ## Conclusion
