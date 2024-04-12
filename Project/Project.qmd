@@ -55,7 +55,7 @@ plotts.sample.wge(daily_bike_data$Total_Users)$xbar
 
 
 ## Models
-### Univariate: At least 2 candidate ARMA / ARIMA models
+### Univariate
 
 #### ARMA Model 
 ```{r}
@@ -253,7 +253,7 @@ f.	Visualization of Forecasts for both the short- and long-term Horizons.
 g.	Be sure and include confidence intervals when possible (I don’t have 
 code for confidence intervals from MLP models at the moment… but that would be a good thing to work on!  )
 
-### Multivariate: At least one multivariate model (VAR or MLR with Correlated Errors)
+### Multivariate
 i.	Include an ASE (rolling window is not yet available in multivariate models)
   1.	Short Horizon (you pick the length.. could be one step ahead)
   2.	Long Horizon (you pick ... just must be longer than the short horizon.)
@@ -261,7 +261,7 @@ ii.	Describe the explanatory variable(s) used in the model and why you felt they
 iii.	Visualization of Forecasts for both the short- and long-Horizons.
 iv.	Be sure and include confidence intervals if using VAR … 
 
-
+#### MLR With Correlated Errors
 ```{r}
 ccf(daily_bike_data$Total_Users,daily_bike_data$Humidity) # no lag 
 daily_bike_data$Humidity_lag = dplyr::lag(daily_bike_data$Humidity,4)
@@ -312,10 +312,10 @@ points(seq(672,731,1),mlr_lt_pred$pred,type = 'l', pch = 15,col = 'blue',lwd=1, 
 mlr_lt_ASE= mean((daily_bike_data$Total_Users[672:731] - mlr_lt_pred$pred)^2)
 
 mlr_lt_ASE
+```
 
-
-
-
+#### MLR
+```{r}
 # Forecasting The 4 Exogenous Variables 
 
 parzen.wge(daily_bike_data$Humidity, trunc = 300)
@@ -565,7 +565,7 @@ library(kableExtra)
 
 # Create a data frame with the metrics
 st_model_metrics <- data.frame(
-  Model = c("ARMA", "ARIMA", "MLR-1", "MLR-2", "MLP", "Ensemble"),
+  Model = c("ARMA", "ARIMA", "MLR-Corr.", "MLR", "MLP", "Ensemble"),
   ASE = c(arma_stASE, arima_stASE, mlr_st_ASE, mlr_st_ASE2, ASE.mlp.st, ensemble_st_ASE),
   rwRMSE = c(arma_strwRMSE, arima_strwRMSE, NA, NA, NA, NA)
 )
@@ -601,7 +601,7 @@ library(kableExtra)
 
 # Create a data frame with the metrics
 lt_model_metrics <- data.frame(
-  Model = c("ARMA", "ARIMA", "MLR-1", "MLR-2", "MLP", "Ensemble"),
+  Model = c("ARMA", "ARIMA", "MLR-Corr.", "MLR", "MLP", "Ensemble"),
   ASE = c(arma_ltASE, arima_ltASE, mlr_lt_ASE, mlr_lt_ASE2, ASE.mlp.lt, ensemble_lt_ASE),
   rwRMSE = c(arma_ltrwRMSE, arima_ltrwRMSE, NA, NA, NA, NA)
 )
@@ -630,7 +630,10 @@ kable(lt_model_metrics, format = "html", escape = F, caption = "Model Performanc
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F) %>%
   column_spec(1, bold = T) %>%
   column_spec(2:3)
+
+
+# Year Out Forecast from MLR-1 (Correlated Errors)
+mlr_lt_pred3 = predict(mlr_forecast, newxreg = ahead[1:365,], n.ahead = 365, lastn= FALSE)
+plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(1,1100), main = "365 day MLR Forecast", xlab = 'Time', ylab = 'Total Users')
+points(seq(732,1096,1),mlr_lt_pred3$pred,type = 'l', pch = 1,col = 'blue',lwd=1, lty = 1)
 ```
-
-
-## Conclusion
