@@ -596,6 +596,78 @@ i.	Provide a table comparing all models on at least ASE and rwRMSE (if available
 ii.	Include at least one ensemble model in addition to the models above.
 iii.	Make a case as to why you feel one of your candidate models is the most useful.
 iv.	Provide you final short and long term forecasts with that model. 
+```{r Metrics Table Short, echo = FALSE, eval = TRUE}
+library(knitr)
+library(kableExtra)
+
+# Create a data frame with the metrics
+st_model_metrics <- data.frame(
+  Model = c("ARMA", "ARIMA", "VAR", "MLR", "MLP", "Ensemble"),
+  ASE = c(arma_stASE, arima_stASE, var_st_ase, mlr_st_ASE, ASE.mlp.st, ensemble_st_ASE),
+  rwRMSE = c(arma_strwRMSE, arima_strwRMSE, NA, NA, NA, NA)
+)
+
+# Define helper function for conditional formatting
+apply_conditional_formatting <- function(x){
+  lapply(x, function(val){
+    if (!is.na(val)){
+      return(cell_spec(round(val, 2), 
+          color = ifelse(val == min(st_model_metrics$ASE, na.rm = TRUE),
+            "red", "black")))} else {return(NA)}
+     })
+ }
+
+# Apply conditional formatting to the error columns
+st_model_metrics$ASE <- unlist(apply_conditional_formatting(st_model_metrics$ASE))
+st_model_metrics$rwRMSE <- unlist(apply_conditional_formatting(st_model_metrics$rwRMSE))
+
+# Convert columns to character type with specified formatting
+st_model_metrics$ASE <- formatC(st_model_metrics$ASE, big.mark = ",", format="f")
+st_model_metrics$rwRMSE <- formatC(st_model_metrics$rwRMSE, big.mark = ",", format="f")
+
+# Create and format the table
+kable(st_model_metrics, format = "html", escape = F, caption = "Model Performance Metrics (Short-Term)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  column_spec(2:3)
+```
+
+```{r Metrics Table Long, echo = FALSE, eval = TRUE}
+library(knitr)
+library(kableExtra)
+
+# Create a data frame with the metrics
+lt_model_metrics <- data.frame(
+  Model = c("ARMA", "ARIMA", "VAR", "MLR", "MLP", "Ensemble"),
+  ASE = c(arma_ltASE, arima_ltASE, var_lt_ase, mlr_lt_ASE, ASE.mlp.lt, ensemble_lt_ASE),
+  rwRMSE = c(arma_ltrwRMSE, arima_ltrwRMSE, NA, NA, NA, NA)
+)
+
+# Define helper function for conditional formatting
+apply_conditional_formatting <- function(x){
+  lapply(x, function(val){
+    if (!is.na(val)){
+      return(cell_spec(round(val, 2), 
+          color = ifelse(val == min(lt_model_metrics$ASE, na.rm = TRUE),
+            "red", "black")))} else {return(NA)}
+     })
+ }
+
+# Apply conditional formatting to the error columns
+lt_model_metrics$ASE <- unlist(apply_conditional_formatting(lt_model_metrics$ASE))
+lt_model_metrics$rwRMSE <- unlist(apply_conditional_formatting(lt_model_metrics$rwRMSE))
+
+# Convert columns to character type with specified formatting
+lt_model_metrics$ASE <- formatC(lt_model_metrics$ASE, big.mark = ",", format="f")
+lt_model_metrics$rwRMSE <- formatC(lt_model_metrics$rwRMSE, big.mark = ",", format="f")
+
+#FIXME: commas not working
+# Create and format the table
+kable(lt_model_metrics, format = "html", escape = F, caption = "Model Performance Metrics (Long-Term)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  column_spec(2:3)
+```
 
 
 ## Conclusion
