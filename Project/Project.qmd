@@ -366,10 +366,18 @@ mlr_st_pred2 = predict(mlr_forecast, newxreg = ahead[1:7,], n.ahead = 7, lastn= 
 plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(720,738), main = "7 day MLR Forecast", xlab = 'Time', ylab = 'Total Users')
 points(seq(732,738,1),mlr_st_pred2$pred,type = 'l', pch = 15,col = 'blue',lwd=2, lty = 2)
 
+mlr_st_ASE2= mean((daily_bike_data$Total_Users[725:731] - mlr_st_pred2$pred)^2)
+mlr_st_ASE2
+
+
 
 mlr_lt_pred2 = predict(mlr_forecast, newxreg = ahead[1:60,], n.ahead = 60, lastn= FALSE)
 plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(700,785), main = "60 day MLR Forecast", xlab = 'Time', ylab = 'Total Users')
 points(seq(732,791,1),mlr_lt_pred2$pred,type = 'l', pch = 1,col = 'blue',lwd=2, lty = 2)
+
+mlr_lt_ASE2= mean((daily_bike_data$Total_Users[672:731] - mlr_lt_pred2$pred)^2)
+mlr_lt_ASE2
+
 
 # Year Out Forecast
 mlr_lt_pred3 = predict(mlr_forecast, newxreg = ahead[1:365,], n.ahead = 365, lastn= FALSE)
@@ -377,51 +385,6 @@ plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(1,1100), main 
 points(seq(732,1096,1),mlr_lt_pred3$pred,type = 'l', pch = 1,col = 'blue',lwd=1, lty = 1)
 
 ```
-
-
-```{r}
-VARselect(daily_bike_data[,c(5,8:11,14)])
-fit2 = VAR(daily_bike_data[,c(5,8:11,14)], p = 7, type = 'trend')
-
-
-plotts.wge(fit2$varresult$Total_Users$residuals)
-acf(fit2$varresult$Total_Users$residuals)
-ljung.wge(fit2$varresult$Total_Users$residuals, p = 10)
-ljung.wge(fit2$varresult$Total_Users$residuals, p = 10, K = 48)
-
-var_st_pred = predict(fit2, n.ahead = 7, lastn = TRUE)
-
-t = 1:731
-plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(670,731))
-points(t[725:731], var_st_pred$fcst$Total_Users[,1], type="l", lwd=2, lty = 2)
-
-var_st_ase = mean((daily_bike_data$Total_Users[725:731]-var_st_pred$fcst$Total_Users[,1])^2)
-var_st_ase
-
-var_lt_pred = predict(fit2, n.ahead = 60, lastn = TRUE)
-
-t = 1:731
-plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(672,731))
-points(t[672:731], var_lt_pred$fcst$Total_Users[,1], type="l", lwd=2, lty = 1)
-
-var_lt_ase = mean((daily_bike_data$Total_Users[672:731]-var_lt_pred$fcst$Total_Users[,1])^2)
-var_lt_ase
-
-
-var_st_pred2 = predict(fit2, n.ahead = 7, lastn = FALSE)
-
-t = 1:800
-plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(670,738), main = "Short Term VAR Forecast")
-points(t[732:738], var_st_pred2$fcst$Total_Users[,1], type="l", lwd=2, lty = 1, col = 'blue')
-
-var_lt_pred2 = predict(fit2, n.ahead = 60, lastn = FALSE)
-
-t = 1:800
-plot(seq(1,731,1),daily_bike_data$Total_Users,type = 'l',xlim = c(670,791), main = "Long Term VAR Forecast")
-points(t[732:791], var_lt_pred2$fcst$Total_Users[,1], type="l", lwd=2, lty = 1, col = 'blue')
-
-```
-
 
 
 ### MLP Model
@@ -602,8 +565,8 @@ library(kableExtra)
 
 # Create a data frame with the metrics
 st_model_metrics <- data.frame(
-  Model = c("ARMA", "ARIMA", "VAR", "MLR", "MLP", "Ensemble"),
-  ASE = c(arma_stASE, arima_stASE, var_st_ase, mlr_st_ASE, ASE.mlp.st, ensemble_st_ASE),
+  Model = c("ARMA", "ARIMA", "MLR-1", "MLR-2", "MLP", "Ensemble"),
+  ASE = c(arma_stASE, arima_stASE, mlr_st_ASE, mlr_st_ASE2, ASE.mlp.st, ensemble_st_ASE),
   rwRMSE = c(arma_strwRMSE, arima_strwRMSE, NA, NA, NA, NA)
 )
 
@@ -638,8 +601,8 @@ library(kableExtra)
 
 # Create a data frame with the metrics
 lt_model_metrics <- data.frame(
-  Model = c("ARMA", "ARIMA", "VAR", "MLR", "MLP", "Ensemble"),
-  ASE = c(arma_ltASE, arima_ltASE, var_lt_ase, mlr_lt_ASE, ASE.mlp.lt, ensemble_lt_ASE),
+  Model = c("ARMA", "ARIMA", "MLR-1", "MLR-2", "MLP", "Ensemble"),
+  ASE = c(arma_ltASE, arima_ltASE, mlr_lt_ASE, mlr_lt_ASE2, ASE.mlp.lt, ensemble_lt_ASE),
   rwRMSE = c(arma_ltrwRMSE, arima_ltrwRMSE, NA, NA, NA, NA)
 )
 
